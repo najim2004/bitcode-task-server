@@ -1,38 +1,54 @@
-import { createUser, findUserByEmail } from '../models/userModel.js';
+import User from '../models/userModel.js';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
-const signup = (req, res) => {
-  const { email, password } = req.body;
+export const signup = async (req, res) => {
+    try {
+        const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).send('Email and password are required');
-  }
+        const existingUser = await User.findOne({ email });
 
-  const existingUser = findUserByEmail(email);
-  if (existingUser) {
-    return res.status(400).send('Email already exists');
-  }
+        if (existingUser) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
 
-  const newUser = createUser(email, password);
-  res.status(201).json(newUser);
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = new User({
+            email,
+            password: hashedPassword
+        });
+
+        await newUser.save();
+
+        res.status(201).json({ message: 'User created successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
 };
 
-const login = (req, res) => {
-  const { email, password } = req.body;
+export const login = async (req, res) => {
+    try {
+        const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).send('Email and password are required');
-  }
+        const user = await User.findOne({ email });
 
-  const user = findUserByEmail(email);
-  if (!user) {
-    return res.status(400).send('Invalid credentials');
-  }
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
 
-  if (user.password !== password) {
-    return res.status(400).send('Invalid credentials');
-  }
+        const isPasswordValid = await bcrypt.compare(password, user.password);
 
-  res.status(200).json({ message: 'Login successful' });
+        if (!isPasswordValid) {
+            return res.status(400).json({ message: 'Invalid credentials' });
+        }
+
+        const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+
+        res.status(200).json({ message: 'Logged in successfully', token });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Internal Server Error' });
+    }
 };
-
-export { signup, login };
