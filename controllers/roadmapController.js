@@ -3,14 +3,18 @@ const asyncHandler = require("../utils/asyncHandler");
 
 exports.getRoadmapItems = asyncHandler(async (req, res) => {
   const { category, status, sort } = req.query;
+
   const query = {};
-  if (category) query.category = category;
-  if (status) query.status = status;
+  if (category) query.category = new RegExp(`^${category}$`, "i");
+  if (status) query.status = new RegExp(`^${status}$`, "i");
+
   const items = await RoadmapItem.find(query)
     .sort(sort === "popularity" ? { upvotes: -1 } : { createdAt: -1 })
     .lean();
+
   res.json(items);
 });
+
 
 exports.upvoteItem = asyncHandler(async (req, res) => {
   const { id } = req.params;
