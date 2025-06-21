@@ -15,7 +15,6 @@ const roadmapItemSchema = new mongoose.Schema(
       enum: ["Planned", "In Progress", "Completed"],
     },
     upvotes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    createdAt: { type: Date, default: Date.now },
     author: { type: String, required: true },
   },
   {
