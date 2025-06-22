@@ -32,7 +32,11 @@ exports.editComment = asyncHandler(async (req, res) => {
   }
   comment.content = content;
   await comment.save();
-  res.json(comment);
+  const populatedComment = await Comment.findById(comment._id).populate(
+    "user",
+    "email"
+  );
+  res.json(populatedComment);
 });
 
 exports.deleteComment = asyncHandler(async (req, res) => {
